@@ -1,5 +1,6 @@
 package com.example.fakestrore.presentation.screens
 
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -75,11 +76,9 @@ fun ProductScreen(navController: NavController) {
     val lazyListState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
-    // Высота области заголовка
     val headerHeight = 100.dp
     val headerHeightPx = with(LocalDensity.current) { headerHeight.toPx() }
 
-    // Прогресс сворачивания на основе прокрутки
     val scrollOffset by derivedStateOf {
         lazyListState.firstVisibleItemScrollOffset.toFloat()
     }
@@ -92,7 +91,7 @@ fun ProductScreen(navController: NavController) {
     var showDialog by remember { mutableStateOf(false) }
 
     var showDetail by remember { mutableStateOf(false) }
-    var detailId: ProductModelItem? = null
+    var detailId by remember { mutableStateOf<ProductModelItem?>(null) }
 
 
     Scaffold(
@@ -212,8 +211,8 @@ fun ProductScreen(navController: NavController) {
                         products = categoryData,
                         lazyListState = lazyListState,
                         onClick = {
-                            showDetail = true
                             detailId = it
+                            showDetail = true
                         }
                     )
                 }
@@ -242,211 +241,11 @@ fun ProductScreen(navController: NavController) {
                     },
                     product = detailId!!,
                     addCart = {viewModel.addCart(it)},
-                    goToCart = {navController.navigate(Route.CART)}
+                    goToCart = {
+                        navController.navigate(Route.CART)
+                    }
                 )
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProductDetail(
-    onDismiss: () -> Unit,
-    product: ProductModelItem,
-    addCart: (ProductModelItem) -> Unit,
-    goToCart: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val addTo = remember { mutableStateOf(true) }
-
-    ModalBottomSheet(
-        containerColor = Color.White,
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.Start,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            AsyncImage(
-                model = product.image, // URL изображения
-                contentDescription = product.description,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .size(height = 300.dp, width = 380.dp),
-                contentScale = ContentScale.Fit,
-                placeholder = painterResource(R.drawable.ic_logo), // Заглушка на время загрузки
-                error = painterResource(R.drawable.ic_logo)
-            )
-            Sp()
-            HorizontalDivider()
-            Sp()
-            Text(
-                text = product.title,
-                fontSize = 18.sp,
-            )
-            Sp()
-            InfoRow(title = "Category", value = product.category)
-            Spacer(modifier = Modifier.height(8.dp))
-            InfoRow(title = "Rating") {
-                RatingBar(product.ratingModel.rate)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            InfoRow(title = "Price", value = "${product.price}$", valueFontSize = 26.sp)
-            Sp()
-            Text(
-                "Description", color = GrayMiddle,
-                fontSize = 16.sp,
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Text(
-                    text = product.description,
-                    color = GrayDark,
-                    fontSize = 12.sp
-                )
-            }
-            Sp()
-            if (addTo.value) {
-                Button(
-                    onClick = {
-                        addTo.value = false
-                        addCart(product)
-                    },
-                    border = BorderStroke(1.dp, color = Color.Black),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(360.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Add to cart",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.W700
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Icon(
-                            painter = painterResource(R.drawable.ic_shop_cart_outline_add),
-                            contentDescription = "ADD TO CART",
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                    }
-                }
-            } else {
-                Button(
-                    onClick = {
-                        goToCart()
-                    },
-                    border = BorderStroke(1.dp, color = Color.Black),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(360.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                    ) {
-                        Text(
-                            text = "GO TO CART",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.W700,
-                            modifier = Modifier.align(Alignment.CenterStart)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Icon(
-                            painter = painterResource(R.drawable.ic_shop_cart_outline_go),
-                            contentDescription = "ADD TO CART",
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun RatingBar(rating: Double, modifier: Modifier = Modifier) {
-    Row(modifier = modifier) {
-        val fullStars = rating.toInt()
-        val hasHalfStar = (rating - fullStars) >= 0.5
-        val emptyStars = 5 - fullStars - if (hasHalfStar) 1 else 0
-
-        // Полные звезды
-        repeat(fullStars) {
-            Icon(
-                painter = painterResource(R.drawable.ic_star_fill),
-                contentDescription = "Full Star",
-                tint = Color.Black
-            )
-        }
-
-        // Половинчатая звезда
-        if (hasHalfStar) {
-            Icon(
-                painter = painterResource(R.drawable.ic_star_half),
-                contentDescription = "Half Star",
-                tint = Color.Black
-            )
-        }
-
-        // Пустые звезды
-        repeat(emptyStars) {
-            Icon(
-                painter = painterResource(R.drawable.ic_star_empty),
-                contentDescription = "Empty Star",
-                tint = Color.Black
-            )
-        }
-    }
-}
-
-@Composable
-fun InfoRow(
-    title: String,
-    value: String? = null,
-    valueFontSize: TextUnit = 16.sp,
-    content: @Composable (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Заголовок фиксированной ширины
-        Text(
-            text = title,
-            color = GrayMiddle,
-            fontSize = 16.sp,
-            modifier = Modifier.width(80.dp) // фиксируем ширину
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        if (value != null) {
-            Text(text = value, fontSize = valueFontSize)
-        } else {
-            content?.invoke()
         }
     }
 }
