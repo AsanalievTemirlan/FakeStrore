@@ -157,7 +157,7 @@ fun ProductScreen(navController: NavController) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Открыть корзину */ }) {
+                    IconButton(onClick = { navController.navigate(Route.CART) }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cart_fill),
                             contentDescription = "Cart"
